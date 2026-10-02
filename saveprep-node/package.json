@@ -1,7 +1,20 @@
 {
   "name": "saveprep-node",
-  "version": "2.2.0",
+  "version": "2.3.0",
   "description": "Prepare OpenRCT2 saves for use with FFA Tycoon multiplayer servers",
+  "keywords": [
+    "openrct2",
+    "Rollercoaster Tycoon"
+  ],
+  "bugs": {
+    "url": "https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep/-/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep.git"
+  },
+  "license": "GPL-3.0",
+  "author": "Cory Sanin",
   "main": "index.js",
   "scripts": {
     "build": "build-shit",
@@ -15,19 +28,6 @@
   },
   "devDependencies": {
     "forking-build-shit": "1.0.4"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep.git"
-  },
-  "keywords": [
-    "openrct2",
-    "Rollercoaster Tycoon"
-  ],
-  "author": "Cory Sanin",
-  "license": "GPL-3.0",
-  "bugs": {
-    "url": "https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep/-/issues"
   },
   "devEngines": {
     "packageManager": {
