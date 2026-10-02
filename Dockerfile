@@ -6,7 +6,7 @@ RUN apk add --no-cache gcc g++ make cmake nlohmann-json libzip-dev curl-dev font
 
 WORKDIR /openrct2
 
-COPY . .
+COPY --exclude=saveprep-node/ --exclude=config/ . .
 
 RUN mkdir build \
  && cd build \
@@ -32,22 +32,16 @@ RUN mkdir -p /config/object/
 
 # Build runtime image
 FROM base AS deploy
-HEALTHCHECK  --timeout=3s \
-  CMD curl --fail http://localhost:8080/healthcheck || exit 1
-COPY --from=build-env /openrct2-install /openrct2-install
+HEALTHCHECK  --timeout=5s \
+  CMD wget -nv -t1 --spider http://localhost:8080/healthcheck || exit 1
+COPY --from=build-env /openrct2-install /
 WORKDIR /usr/src/saveprep
 COPY --from=configdir --chown=node:node /config /home/node/.config/OpenRCT2/
 COPY --from=node-build --chown=node:node /usr/src/saveprep /usr/src/saveprep
-RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl freetype fontconfig icu curl \
- && rsync -a /openrct2-install/* / \
- && rm -rf /openrct2-install \
+RUN apk add --no-cache rsync ca-certificates libpng libzip libcurl freetype fontconfig icu \
  && openrct2-cli --version \
  && ln -sf /game /rct2
 USER node
 EXPOSE 8080
-
-# Test run and scan
-RUN openrct2-cli --version \
- && openrct2-cli scan-objects
 
 CMD [ "node", "index.js" ]

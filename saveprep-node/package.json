@@ -29,7 +29,7 @@
   "bugs": {
     "url": "https://gitlab.com/sanin.dev/ffa-tycoon-scenario-prep/-/issues"
   },
-    "devEngines": {
+  "devEngines": {
     "packageManager": {
       "name": "pnpm",
       "version": "^12.5.1",
