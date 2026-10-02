@@ -15,19 +15,27 @@
   },
   "license": "GPL-3.0",
   "author": "Cory Sanin",
-  "main": "index.js",
+  "type": "module",
+  "main": "./distribution/server/index.js",
   "scripts": {
-    "build": "build-shit",
-    "watch": "build-shit --watch"
+    "build": "tsc && SCRIPTINDIR=distribution/client/ build-shit",
+    "watch": "tsc && SCRIPTINDIR=distribution/client/ build-shit --watch",
+    "start": "node distribution/server/index.js"
   },
   "dependencies": {
     "dayjs": "1.11.18",
     "ejs": "3.1.10",
-    "express": "5.1.0",
-    "express-fileupload": "1.5.2"
+    "express": "5.2.1",
+    "express-fileupload": "1.5.2",
+    "spawn-but-with-promises": "^1.0.4"
   },
   "devDependencies": {
-    "forking-build-shit": "1.0.4"
+    "@sindresorhus/tsconfig": "^8.1.0",
+    "@types/express": "^5.0.6",
+    "@types/express-fileupload": "^1.5.1",
+    "@types/node": "^26.6.3",
+    "forking-build-shit": "1.1.7",
+    "typescript": "^7.0.2"
   },
   "devEngines": {
     "packageManager": {
