@@ -1,4 +1,4 @@
-FROM node:current-alpine3.21 AS base
+FROM node:current-alpine3.24 AS base
 
 # Build OpenRCT2
 FROM base AS build-env
@@ -14,8 +14,9 @@ RUN mkdir build \
     && make -j8 graphics install \
     && rm /openrct2-install/usr/lib/libopenrct2.a
 
-FROM ghcr.io/pnpm/pnpm:12 AS node-build
+FROM base AS node-build
 WORKDIR /usr/src/saveprep
+RUN apk add --no-cache pnpm
 RUN --mount=target=/usr/src/saveprep/package.json,source=saveprep-node/package.json \
     --mount=target=/usr/src/saveprep/pnpm-lock.yaml,source=saveprep-node/pnpm-lock.yaml \
     --mount=target=/usr/src/saveprep/pnpm-workspace.yaml,source=saveprep-node/pnpm-workspace.yaml \
