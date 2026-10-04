@@ -1,4 +1,9 @@
+.github/
+.vscode/
 bin/
 build/
 lib/
 obj/
+.env
+docker-compose.yml
+Dockerfile

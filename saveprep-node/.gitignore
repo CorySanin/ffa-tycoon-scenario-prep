@@ -107,3 +107,4 @@ dist
 config/config.json5
 assets/css
 assets/js
+distribution/
