@@ -1,5 +1,6 @@
 import path from 'path';
 import fs from 'fs';
+import { randomUUID, type UUID } from 'node:crypto';
 import { setTimeout } from 'node:timers/promises'
 import { spawn } from 'spawn-but-with-promises';
 import express from 'express';
@@ -25,6 +26,22 @@ export function notStupidParseInt(v: string | number | undefined): number {
         return v;
     }
     return v === undefined ? NaN : parseInt(v);
+}
+
+export type scenarioType = 'sandbox' | 'economy';
+
+export interface PreparedPark {
+    mode: scenarioType;
+    filename: string;
+    /**
+     * base64-encoded string
+     */
+    data: string;
+}
+
+export interface ResponseBody {
+    status: string;
+    id: UUID;
 }
 
 interface prepareParams {
@@ -60,16 +77,18 @@ async function prepareSave(params: prepareSandboxParams | prepareEconParams) {
         throw new Error(`prepare timed out after ${timeout} seconds`);
     }
     else if (proc.exitCode === 0) {
-        return {
+        const prepared: PreparedPark = {
             mode,
             filename: path.basename(destination),
             data: (await fsp.readFile(destination)).toString('base64')
         };
+        return prepared;
     }
     throw new Error(`prepare exited with code ${proc.exitCode}`);
 }
 
 export async function createServer(config: ServerOptions) {
+    const runningJobs: Record<string, Promise<PreparedPark>[]> = {};
     const app = express();
     const orct2Version = await (async function (timeout: number) {
         const proc = spawn('openrct2-cli', ['--version']);
@@ -124,7 +143,8 @@ export async function createServer(config: ServerOptions) {
                 let desteconomy = path.join(dir, `${basename}-economy.park`);
 
                 try {
-                    let result = await Promise.all([
+                    const id = randomUUID();
+                    const jobs = [
                         prepareSave({
                             timeout: config.timeout,
                             filename,
@@ -138,13 +158,15 @@ export async function createServer(config: ServerOptions) {
                             mode: 'economy',
                             funds: parseInt(req.body.funds) || config.funds
                         })
-                    ]);
-
+                    ];
+                    runningJobs[id] = jobs;
                     res.send({
                         status: 'nice',
-                        files: result
-                    });
+                        id
+                    } satisfies ResponseBody);
 
+                    await Promise.all(jobs);
+                    delete runningJobs[id];
                     await fsp.rm(dir, { recursive: true });
                 }
                 catch (ex) {
@@ -159,6 +181,22 @@ export async function createServer(config: ServerOptions) {
                 status: 'bad'
             });
         }
+    });
+
+    app.get('/results/:id', async (req, res) => {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+        const jobs = typeof req.params.id === 'string' ? runningJobs[req.params.id] : null;
+        if (!jobs) {
+            res.end();
+            return;
+        }
+        jobs.forEach(j => {
+            j.then(park => res.write(`data:${JSON.stringify(park)}\n\n`));
+        });
+        await Promise.all(jobs);
+        res.end();
     });
 
     app.get('/', (_req, res) => {
@@ -190,4 +228,3 @@ export async function createServer(config: ServerOptions) {
         });
     });
 }
-

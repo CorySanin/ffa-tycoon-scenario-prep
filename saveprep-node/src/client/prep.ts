@@ -1,3 +1,4 @@
+import type { scenarioType, ResponseBody, PreparedPark } from '../server/web.js';
 
 // Function to download data to a file (https://stackoverflow.com/a/30832210/11210376)
 function download(data: Uint8Array<ArrayBuffer>, filename: string, type: string) {
@@ -14,20 +15,10 @@ function download(data: Uint8Array<ArrayBuffer>, filename: string, type: string)
     }, 0);
 }
 
-type scenarioType = 'sandbox' | 'economy';
 type processStatus = 'disabled' | 'loading' | 'ready' | 'error';
 interface FileObjects {
     data: Uint8Array<ArrayBuffer>;
     filename: string;
-}
-interface ResponseBodyFiles {
-    mode: scenarioType;
-    filename: string;
-    data: string; // base64-encoded string
-}
-interface ResponseBody {
-    status: string;
-    files: ResponseBodyFiles[];
 }
 
 document.addEventListener("DOMContentLoaded", function () {
@@ -67,11 +58,13 @@ document.addEventListener("DOMContentLoaded", function () {
     };
 
 
-    function updateTiles(status: processStatus) {
-        uploadBtn.disabled = fileInput.disabled = status == 'loading';
+    function updateTiles(status: processStatus, filter?: scenarioType) {
         for (let key in tilebuttons) {
+            if (filter && key !== filter) {
+                continue;
+            }
             const btn = tilebuttons[key as keyof typeof tilebuttons];
-            btn.disabled = status != 'ready';
+            btn.disabled = status !== 'ready';
             btn.classList.remove(...statuses);
             btn.classList.add(status);
         }
@@ -85,38 +78,37 @@ document.addEventListener("DOMContentLoaded", function () {
         download(fobj.data, fobj.filename, 'application/octet-stream');
     }
 
-    uploadBtn.addEventListener('click', _e => {
+    uploadBtn.addEventListener('click', async _e => {
         const file = fileInput.files?.[0];
         if (!file) {
             return;
         }
-        var body = new FormData();
+        const body = new FormData();
         body.append('park', file);
         body.append('funds', fundInput.value);
         resetFile();
         updateTiles('loading');
-        fetch('/upload', {
+        const response = await fetch('/upload', {
             method: 'POST',
             headers: {
             },
             body
-        })
-            .then(response => response.json() as Promise<ResponseBody>)
-            .then(data => {
-                if (data.status === 'nice') {
-                    updateTiles('ready');
-                    data.files.forEach(obj => {
-                        fileobjs[obj.mode] = {
-                            filename: obj.filename,
-                            data: Uint8Array.from(atob(obj.data), c => c.charCodeAt(0))
-                        };
-                    });
-
-                }
-                else {
-                    updateTiles('error');
-                }
+        });
+        const data = await response.json() as ResponseBody;
+        if (data.status === 'nice') {
+            const evtSource = new EventSource(`/results/${data.id}`);
+            evtSource.addEventListener('message', message => {
+                const parkFile = JSON.parse(message.data) as PreparedPark;
+                fileobjs[parkFile.mode] = {
+                    filename: parkFile.filename,
+                    data: Uint8Array.from(atob(parkFile.data), c => c.charCodeAt(0))
+                };
+                updateTiles('ready', parkFile.mode);
             });
+        }
+        else {
+            updateTiles('error');
+        }
     });
 
     for (let key in tilebuttons) {
