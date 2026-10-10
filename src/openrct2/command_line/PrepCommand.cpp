@@ -262,7 +262,7 @@ OpenRCT2::CommandLine::ExitCode CommandLine::HandleCommandPrep(CommandLineArgEnu
 
     gGamePaused = 0;
 
-    gameState.newsItems.clear();
+    gameState.park.newsItems.clear();
 
     if (prepSandbox)
     {
